@@ -1,13 +1,15 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class item : MonoBehaviour
 {
     private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Player"))
+        if (other.transform.root.CompareTag("Player"))
         {
-            Debug.Log("������ ȹ��!");
-            Destroy(gameObject); 
+            gamemanager.score++;   // ⭐ 점수 증가 (여기!)
+            Debug.Log("아이템 획득! 점수: " + gamemanager.score);
+
+            Destroy(gameObject);
         }
     }
 }

@@ -1,12 +1,13 @@
 using UnityEngine;
+using TMPro;
 
 public class gamemanager : MonoBehaviour
 {
     public static int score = 0;
+    public TextMeshProUGUI scoreText;
 
-    public static void AddScore()
+    void Update()
     {
-        score++;
-        Debug.Log("Á¡¼ö: " + score);
+        scoreText.text = "Score: " + score;
     }
 }

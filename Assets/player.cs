@@ -17,6 +17,9 @@ public class player : MonoBehaviour
     public float radiusB = 1f;
     private bool detected = false;
 
+    // ===== 방향 상태 =====
+    private bool facingForward = true;
+
     void Start()
     {
         rb = GetComponent<Rigidbody>();
@@ -27,6 +30,18 @@ public class player : MonoBehaviour
         Move();
         Jump();
         DetectMonster();
+
+        // ===== S키 회전 (핵심 추가 부분) =====
+        if (Keyboard.current != null)
+        {
+            if (Keyboard.current.sKey.wasPressedThisFrame)
+            {
+                facingForward = !facingForward;
+
+                float yRotation = facingForward ? 0f : 180f;
+                transform.rotation = Quaternion.Euler(0, yRotation, 0);
+            }
+        }
     }
 
     // ================= 이동 =================

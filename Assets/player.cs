@@ -1,50 +1,49 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 
 public class player : MonoBehaviour
 {
+    [Header("Movement")]
     public float moveSpeed = 5f;
-
-    // ===== 점프 =====
     public float jumpForce = 5f;
-    public float checkDistance = 0.6f;
+    public float checkDistance = 2.5f;
+
+    [Header("Monster / Detection")]
+    public Transform monster;
+    public float detectRange = 5f;
+
+    [Header("Path Nodes")]
+    public Transform[] nodes;
+    public float moveToNodeSpeed = 3f;
+    private int currentNodeIndex = 0;
 
     private Rigidbody rb;
-
-    // ===== 몬스터 감지 =====
-    public Transform monster;
-    public float radiusA = 1f;
-    public float radiusB = 1f;
-    private bool detected = false;
-
-    // ===== 방향 상태 =====
-    private bool facingForward = true;
+    private Renderer rend;
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
+        rend = GetComponentInChildren<Renderer>();
+
+        rend.material = new Material(rend.material);
+        SetColor(Color.magenta);
     }
 
     void Update()
     {
         Move();
         Jump();
-        DetectMonster();
+        CheckFall();
 
-        // ===== S키 회전 (핵심 추가 부분) =====
-        if (Keyboard.current != null)
-        {
-            if (Keyboard.current.sKey.wasPressedThisFrame)
-            {
-                facingForward = !facingForward;
+        LookAtMonster();
+        CheckDistance();
+        CheckFOV();
 
-                float yRotation = facingForward ? 0f : 180f;
-                transform.rotation = Quaternion.Euler(0, yRotation, 0);
-            }
-        }
+        MoveAlongNodes();
     }
 
-    // ================= 이동 =================
+    
     void Move()
     {
         Vector3 moveDir = Vector3.zero;
@@ -68,19 +67,19 @@ public class player : MonoBehaviour
         rb.linearVelocity = velocity;
     }
 
-    // ================= 점프 =================
+    
     void Jump()
     {
         bool isGrounded = Physics.Raycast(
-            transform.position + Vector3.up * 0.1f,
+            transform.position,
             Vector3.down,
             checkDistance
         );
 
         Debug.DrawRay(
-            transform.position + Vector3.up * 0.1f,
+            transform.position,
             Vector3.down * checkDistance,
-            isGrounded ? Color.green : Color.red
+            Color.red
         );
 
         if (isGrounded &&
@@ -91,31 +90,98 @@ public class player : MonoBehaviour
         }
     }
 
-    // ================= 몬스터 감지 =================
-    bool IsOverlapping()
+    
+    void CheckFall()
     {
-        if (monster == null) return false;
-
-        Vector3 diff = transform.position - monster.position;
-        float distanceSq = diff.sqrMagnitude;
-
-        float radiusSum = radiusA + radiusB;
-        float radiusSumSq = radiusSum * radiusSum;
-
-        return distanceSq <= radiusSumSq;
+        if (transform.position.y < -10f)
+        {
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        }
     }
 
-    void DetectMonster()
+    
+    void LookAtMonster()
     {
-        if (IsOverlapping() && !detected)
-        {
-            detected = true;
-            Debug.Log("몬스터가 플레이어를 감지!");
-        }
+        if (monster == null) return;
 
-        if (!IsOverlapping())
+        Vector3 dir = monster.position - transform.position;
+        dir.y = 0;
+
+        if (dir.sqrMagnitude > 0.01f)
         {
-            detected = false;
+            Quaternion targetRot = Quaternion.LookRotation(dir);
+            transform.rotation = Quaternion.Slerp(
+                transform.rotation,
+                targetRot,
+                5f * Time.deltaTime
+            );
         }
+    }
+
+  
+    void CheckDistance()
+    {
+        if (monster == null) return;
+
+        Vector3 diff = monster.position - transform.position;
+        float sqrDist = diff.sqrMagnitude;
+
+        if (sqrDist < detectRange * detectRange)
+        {
+            Debug.Log("장애물 가까움!");
+        }
+    }
+
+   
+    void CheckFOV()
+    {
+        if (monster == null) return;
+
+        Vector3 dirToMonster = monster.position - transform.position;
+        dirToMonster.y = 0;
+
+        float angle = Vector3.Angle(transform.forward, dirToMonster);
+
+        float fov = 60f;
+
+        if (angle < fov * 0.5f)
+        {
+            Debug.Log("시야 안에 몬스터 있음!");
+        }
+    }
+
+    
+    void MoveAlongNodes()
+    {
+        if (nodes == null || nodes.Length == 0) return;
+
+        Transform targetNode = nodes[currentNodeIndex];
+
+        transform.position = Vector3.MoveTowards(
+            transform.position,
+            targetNode.position,
+            moveToNodeSpeed * Time.deltaTime
+        );
+
+        if (Vector3.Distance(transform.position, targetNode.position) < 0.1f)
+        {
+            currentNodeIndex++;
+
+            if (currentNodeIndex >= nodes.Length)
+            {
+                currentNodeIndex = 0;
+            }
+        }
+    }
+
+  
+    void SetColor(Color color)
+    {
+        if (rend == null) return;
+
+        if (rend.material.HasProperty("_BaseColor"))
+            rend.material.SetColor("_BaseColor", color);
+        else
+            rend.material.color = color;
     }
 }

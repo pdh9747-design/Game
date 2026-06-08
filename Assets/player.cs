@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
+using System.Collections.Generic;
 
 public class player : MonoBehaviour
 {
@@ -16,10 +17,13 @@ public class player : MonoBehaviour
     [Header("Path Nodes")]
     public Transform[] nodes;
     public float moveToNodeSpeed = 3f;
-    private int currentNodeIndex = 0;
 
     private Rigidbody rb;
     private Renderer rend;
+
+    // BFS
+    private Queue<Transform> pathQueue = new Queue<Transform>();
+    private bool isPathInitialized = false;
 
     void Start()
     {
@@ -28,6 +32,8 @@ public class player : MonoBehaviour
 
         rend.material = new Material(rend.material);
         SetColor(Color.magenta);
+
+        InitializePath();
     }
 
     void Update()
@@ -43,7 +49,7 @@ public class player : MonoBehaviour
         MoveAlongNodes();
     }
 
-    
+   
     void Move()
     {
         Vector3 moveDir = Vector3.zero;
@@ -67,7 +73,6 @@ public class player : MonoBehaviour
         rb.linearVelocity = velocity;
     }
 
-    
     void Jump()
     {
         bool isGrounded = Physics.Raycast(
@@ -76,11 +81,7 @@ public class player : MonoBehaviour
             checkDistance
         );
 
-        Debug.DrawRay(
-            transform.position,
-            Vector3.down * checkDistance,
-            Color.red
-        );
+        Debug.DrawRay(transform.position, Vector3.down * checkDistance, Color.red);
 
         if (isGrounded &&
             Keyboard.current != null &&
@@ -90,16 +91,15 @@ public class player : MonoBehaviour
         }
     }
 
-    
     void CheckFall()
     {
         if (transform.position.y < -10f)
         {
+            gamemanager.Instance.ShowFallMessage();
             SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         }
     }
 
-    
     void LookAtMonster()
     {
         if (monster == null) return;
@@ -110,21 +110,15 @@ public class player : MonoBehaviour
         if (dir.sqrMagnitude > 0.01f)
         {
             Quaternion targetRot = Quaternion.LookRotation(dir);
-            transform.rotation = Quaternion.Slerp(
-                transform.rotation,
-                targetRot,
-                5f * Time.deltaTime
-            );
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, 5f * Time.deltaTime);
         }
     }
 
-  
     void CheckDistance()
     {
         if (monster == null) return;
 
-        Vector3 diff = monster.position - transform.position;
-        float sqrDist = diff.sqrMagnitude;
+        float sqrDist = (monster.position - transform.position).sqrMagnitude;
 
         if (sqrDist < detectRange * detectRange)
         {
@@ -132,49 +126,57 @@ public class player : MonoBehaviour
         }
     }
 
-   
     void CheckFOV()
     {
         if (monster == null) return;
 
-        Vector3 dirToMonster = monster.position - transform.position;
-        dirToMonster.y = 0;
+        Vector3 dirToMonster = (monster.position - transform.position).normalized;
 
-        float angle = Vector3.Angle(transform.forward, dirToMonster);
+        float dot = Vector3.Dot(transform.forward, dirToMonster);
 
-        float fov = 60f;
-
-        if (angle < fov * 0.5f)
+        if (dot > 0.5f)
         {
-            Debug.Log("시야 안에 몬스터 있음!");
+            Debug.Log("시야 안에 장애물 있음!");
         }
     }
 
-    
-    void MoveAlongNodes()
+   
+    void InitializePath()
     {
         if (nodes == null || nodes.Length == 0) return;
 
-        Transform targetNode = nodes[currentNodeIndex];
+        foreach (Transform node in nodes)
+        {
+            pathQueue.Enqueue(node);
+        }
+
+        isPathInitialized = true;
+    }
+
+    void MoveAlongNodes()
+    {
+        if (!isPathInitialized || pathQueue.Count == 0) return;
+
+        Transform target = pathQueue.Peek();
 
         transform.position = Vector3.MoveTowards(
             transform.position,
-            targetNode.position,
+            target.position,
             moveToNodeSpeed * Time.deltaTime
         );
 
-        if (Vector3.Distance(transform.position, targetNode.position) < 0.1f)
+        if (Vector3.Distance(transform.position, target.position) < 0.1f)
         {
-            currentNodeIndex++;
+            pathQueue.Dequeue();
 
-            if (currentNodeIndex >= nodes.Length)
+            if (pathQueue.Count == 0)
             {
-                currentNodeIndex = 0;
+                InitializePath();
             }
         }
     }
 
-  
+    
     void SetColor(Color color)
     {
         if (rend == null) return;

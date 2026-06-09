@@ -16,7 +16,7 @@ public class gamemanager : MonoBehaviour
     public TextMeshProUGUI failText;
 
     [Header("Timer")]
-    public float timeLimit = 60f;
+    public float timeLimit = 90f;
     private float currentTime;
 
     [Header("Items")]

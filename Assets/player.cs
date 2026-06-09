@@ -21,7 +21,7 @@ public class player : MonoBehaviour
     private Rigidbody rb;
     private Renderer rend;
 
-    // BFS
+    
     private Queue<Transform> pathQueue = new Queue<Transform>();
     private bool isPathInitialized = false;
 

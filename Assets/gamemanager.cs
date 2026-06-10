@@ -19,6 +19,7 @@ public class gamemanager : MonoBehaviour
     public float timeLimit = 90f;
     private float currentTime;
 
+    // 아이템 개수가 계속 변하므로 List를 사용
     [Header("Items")]
     public List<GameObject> items = new List<GameObject>();
 

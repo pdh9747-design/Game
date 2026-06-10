@@ -21,7 +21,7 @@ public class player : MonoBehaviour
     private Rigidbody rb;
     private Renderer rend;
 
-    
+    // 노드를 순서대로 방문하기 위해 Queue 사용
     private Queue<Transform> pathQueue = new Queue<Transform>();
     private bool isPathInitialized = false;
 
@@ -46,7 +46,7 @@ public class player : MonoBehaviour
         CheckDistance();
         CheckFOV();
 
-        MoveAlongNodes();
+        //MoveAlongNodes();
     }
 
    
@@ -151,6 +151,7 @@ public class player : MonoBehaviour
         }
 
         isPathInitialized = true;
+        Debug.Log("경로 초기화 완료");
     }
 
     void MoveAlongNodes()
@@ -158,6 +159,7 @@ public class player : MonoBehaviour
         if (!isPathInitialized || pathQueue.Count == 0) return;
 
         Transform target = pathQueue.Peek();
+        Debug.Log("이동 목표 : " + target.name);
 
         transform.position = Vector3.MoveTowards(
             transform.position,

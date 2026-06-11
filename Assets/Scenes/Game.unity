@@ -4007,12 +4007,9 @@ MonoBehaviour:
   moveSpeed: 3
   jumpForce: 6
   checkDistance: 0.6
-  monster: {fileID: 0}
+  monster: {fileID: 588417116}
   detectRange: 5
-  nodes:
-  - {fileID: 214319862}
-  - {fileID: 0}
-  - {fileID: 0}
+  nodes: []
   moveToNodeSpeed: 3
 --- !u!135 &1147917662
 SphereCollider:
